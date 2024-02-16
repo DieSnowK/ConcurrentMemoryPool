@@ -21,9 +21,24 @@
     <ClInclude Include="ObjectPool.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="ThreadCache.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CentralCache.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="ConcurrentAlloc.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="UnitTest.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ThreadCache.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CentralCache.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

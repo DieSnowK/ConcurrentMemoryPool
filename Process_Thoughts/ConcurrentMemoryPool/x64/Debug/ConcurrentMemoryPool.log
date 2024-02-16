@@ -1,1 +1,14 @@
-﻿
+﻿  CentralCache.cpp
+C:\Users\w1752\Desktop\My_Repository\ConcurrentMemoryPool\Process_Thoughts\ConcurrentMemoryPool\Common.h(132,22): warning C4334: “<<”: 32 位移位的结果被隐式转换为 64 位(是否希望进行 64 位移位?)
+  (编译源文件“CentralCache.cpp”)
+  
+  ThreadCache.cpp
+C:\Users\w1752\Desktop\My_Repository\ConcurrentMemoryPool\Process_Thoughts\ConcurrentMemoryPool\Common.h(132,22): warning C4334: “<<”: 32 位移位的结果被隐式转换为 64 位(是否希望进行 64 位移位?)
+  (编译源文件“ThreadCache.cpp”)
+  
+  UnitTest.cpp
+C:\Users\w1752\Desktop\My_Repository\ConcurrentMemoryPool\Process_Thoughts\ConcurrentMemoryPool\Common.h(132,22): warning C4334: “<<”: 32 位移位的结果被隐式转换为 64 位(是否希望进行 64 位移位?)
+  (编译源文件“UnitTest.cpp”)
+  
+  正在生成代码...
+  ConcurrentMemoryPool.vcxproj -> C:\Users\w1752\Desktop\My_Repository\ConcurrentMemoryPool\Process_Thoughts\ConcurrentMemoryPool\x64\Debug\ConcurrentMemoryPool.exe

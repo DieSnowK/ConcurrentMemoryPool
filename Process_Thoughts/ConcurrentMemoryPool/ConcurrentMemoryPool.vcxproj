@@ -127,10 +127,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CentralCache.h" />
     <ClInclude Include="Common.h" />
+    <ClInclude Include="ConcurrentAlloc.h" />
     <ClInclude Include="ObjectPool.h" />
+    <ClInclude Include="ThreadCache.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CentralCache.cpp" />
+    <ClCompile Include="ThreadCache.cpp" />
     <ClCompile Include="UnitTest.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
