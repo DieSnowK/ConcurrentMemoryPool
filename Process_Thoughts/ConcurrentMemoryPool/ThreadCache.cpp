@@ -1,4 +1,5 @@
 #include "ThreadCache.h"
+#include "CentralCache.h"
 
 // 调用构造和析构？// TODO
 
@@ -32,5 +33,32 @@ void ThreadCache::Deallocate(void* ptr, size_t size)
 
 void* ThreadCache::FetchFromCentralCache(size_t index, size_t alignSize)
 {
-	return nullptr;
+	// 慢开始反馈调节算法
+	// 1.最开始不会一次性向Central Cache要太多，因为可能要太多用不完
+	// 2.如果不断有alignSize大小内存的需求，那么batchNum就会不断增长，直到上限
+	// 3.alignSize越大，一次性向Central Cache要的batchNum就越小
+	// 4.alignSize越小，一次性向Central Cache要的batchNum就越大	
+	size_t batchNum = std::min(_freeLists[index].MaxSize(), SizeAlignMap::MoveObjNum(alignSize));
+	if (batchNum == _freeLists[index].MaxSize())
+	{
+		_freeLists[index].MaxSize() += 2;
+	}
+
+	void* start = nullptr;
+	void* end = nullptr;
+
+	size_t actualNum = CentralCache::GetInstance()->FetchRangeObj(start, end, batchNum, alignSize);
+	assert(actualNum > 1);
+	
+	if (actualNum == 1)
+	{
+		assert(start == end);
+		return start;
+	}
+	else
+	{
+		// 返回头上的一个，剩下的挂在FreeList下
+		_freeLists[index].PushRange(NextObj(start), end);
+		return start;
+	}
 }
