@@ -1,0 +1,21 @@
+﻿  CentralCache.cpp
+C:\Users\w1752\Desktop\My_Repository\ConcurrentMemoryPool\Process_Thoughts\ConcurrentMemoryPool\Common.h(184,22): warning C4334: “<<”: 32 位移位的结果被隐式转换为 64 位(是否希望进行 64 位移位?)
+  (编译源文件“CentralCache.cpp”)
+  
+  PageCache.cpp
+C:\Users\w1752\Desktop\My_Repository\ConcurrentMemoryPool\Process_Thoughts\ConcurrentMemoryPool\Common.h(184,22): warning C4334: “<<”: 32 位移位的结果被隐式转换为 64 位(是否希望进行 64 位移位?)
+  (编译源文件“PageCache.cpp”)
+  
+  ThreadCache.cpp
+C:\Users\w1752\Desktop\My_Repository\ConcurrentMemoryPool\Process_Thoughts\ConcurrentMemoryPool\Common.h(184,22): warning C4334: “<<”: 32 位移位的结果被隐式转换为 64 位(是否希望进行 64 位移位?)
+  (编译源文件“ThreadCache.cpp”)
+  
+  UnitTest.cpp
+C:\Users\w1752\Desktop\My_Repository\ConcurrentMemoryPool\Process_Thoughts\ConcurrentMemoryPool\Common.h(184,22): warning C4334: “<<”: 32 位移位的结果被隐式转换为 64 位(是否希望进行 64 位移位?)
+  (编译源文件“UnitTest.cpp”)
+  
+  正在生成代码
+  Previous IPDB not found, fall back to full compilation.
+  All 81 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  已完成代码的生成
+  ConcurrentMemoryPool.vcxproj -> C:\Users\w1752\Desktop\My_Repository\ConcurrentMemoryPool\Process_Thoughts\ConcurrentMemoryPool\x64\Release\ConcurrentMemoryPool.exe

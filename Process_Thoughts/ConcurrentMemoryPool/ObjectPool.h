@@ -8,21 +8,21 @@
 #endif
 
 // 直接去堆上按页申请空间，彻底摆脱malloc(主要)，并非为了提高效率
-inline static void* SystemAlloc(size_t kpage)
-{
-#ifdef _WIN32
-	void* ptr = VirtualAlloc(0, kpage << 13, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-#else
-	// Linux下brk mmap等
-#endif
-
-	if (ptr == nullptr)
-	{
-		throw std::bad_alloc();
-	}
-
-	return ptr;
-}
+//inline static void* SystemAlloc(size_t kpage)
+//{
+//#ifdef _WIN32
+//	void* ptr = VirtualAlloc(0, kpage << 13, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+//#else
+//	// Linux下brk mmap等
+//#endif
+//
+//	if (ptr == nullptr)
+//	{
+//		throw std::bad_alloc();
+//	}
+//
+//	return ptr;
+//}
 
 // 定长内存池v1.0
 //template<size_t N>

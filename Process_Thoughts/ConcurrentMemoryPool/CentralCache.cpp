@@ -1,4 +1,5 @@
 #include "CentralCache.h"
+#include "PageCache.h"
 
 CentralCache CentralCache::_sInit;
 
@@ -22,13 +23,64 @@ size_t CentralCache::FetchRangeObj(void*& start, void*& end, size_t batchNum, si
 	}
 	span->_freeList = NextObj(end);
 	NextObj(end) = nullptr;
+	span->_useCount += actualNum;
 
 	_spanLists[index]._mtx.unlock();
 
 	return actualNum;
 }
 
+// 先从SpanList中遍历寻找符合要求的Span，若没有，则从PageCache获取
 Span* CentralCache::GetOneSpan(SpanList& list, size_t alignSize)
 {
-	return nullptr;
+	// 查看当前的spanList中是否有还未分配对象的span
+	Span* it = list.Begin();
+	while (it != list.End())
+	{
+		if (it->_freeList)
+		{
+			return it;
+		}
+		else
+		{
+			it = it->_next;
+		}
+	}
+
+	// 先把Central Cache的桶锁解掉，如果其他线程释放内存对象回来，不会阻塞
+	list._mtx.unlock();
+
+	// 至此，说明没有空闲的span了，需要从PageCache获取
+	// NewSpan中递归锁的一种解决方案|
+	PageCache::GetInstance()->_pageMtx.lock();
+	Span* span = PageCache::GetInstance()->NewSpan(SizeAlignMap::MovePageNum(alignSize));
+	PageCache::GetInstance()->_pageMtx.unlock();
+	// 不需要立即续上Central Cache的桶锁,因为k页span只有当前线程能拿到，其他线程拿不到
+
+	// 获取span之后，需要切分span，不需要加锁
+	// 计算span的大块内存起始地址和大块内存的大小(字节数)
+	char* start = (char*)(span->_pageId << PAGE_SHIFT);
+	size_t bytes = span->_n << PAGE_SHIFT;
+	char* end = start + bytes; 
+
+	// 把大块内存切成自由链表链接起来
+	// 尾插比较好，物理上是连续的，连续的CPU缓存利用率比较高
+	// 1.先切一块下来去做头，方便尾插
+	span->_freeList = start;
+	start += alignSize;
+	void* tail = span->_freeList;
+
+	while (start < end)
+	{
+		NextObj(tail) = start;
+		tail = NextObj(tail);
+		start += alignSize;
+	}
+
+	// 切好span以后，需要把span挂到桶里面去的时候，再加锁
+	list._mtx.lock();
+	// 大部分情况下，新的span拿完都还有剩，所以将span入SpanList
+	list.PushFront(span);											
+
+	return span;
 }

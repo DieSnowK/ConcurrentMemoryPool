@@ -7,7 +7,13 @@
 using std::cout;
 using std::endl;
 
-//#define DEBUG
+#ifdef _WIN32
+	#include <Windows.h>
+#else
+	// Linux
+#endif
+
+#define DEBUG
 
 // 这里可以整理 // TODO
 #ifdef _WIN64
@@ -20,6 +26,25 @@ using std::endl;
 
 static const size_t MAX_BYTES = 256 * 1024;
 static const size_t NFREELIST = 208; // 哈希桶的个数
+static const size_t NPAGES = 129; // 最大Page的个数，128，但是0下标占位一个
+static const size_t PAGE_SHIFT = 13; // 字节数与页的转换
+
+// 直接去堆上按页申请空间
+inline static void* SystemAlloc(size_t kpage)
+{
+#ifdef _WIN32
+	void* ptr = VirtualAlloc(0, kpage << 13, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+#else
+	// Linux下brk mmap等
+#endif
+
+	if (ptr == nullptr)
+	{
+		throw std::bad_alloc();
+	}
+
+	return ptr;
+}
 
 // static使NextObj()只在当前.cpp文件中可见，因为多个文件都会包含Common.h
 static inline void*& NextObj(void* obj)
@@ -201,7 +226,7 @@ public:
 
 		// [2, 512] 一次批量移动对象数量的范围，控制一次性获得对象的数量不会太多，也不会太少
 		// 小对象上限高，大对象上限低
-		int num = MAX_BYTES / size;
+		size_t num = MAX_BYTES / size;
 		if (num < 2)
 		{
 			num = 2;
@@ -213,6 +238,25 @@ public:
 		}
 
 		return num;
+	}
+
+	// 计算一次性向系统获取几个页
+	// 每个对象大小不同，获取的数量不同
+	// 单个对象8Byte VS 单个对象256KB
+	static size_t MovePageNum(size_t alignSize)
+	{
+		assert(alignSize > 0);
+
+		size_t num = MoveObjNum(alignSize);
+		size_t nPage = num * alignSize; // 总字节数
+		nPage >>= PAGE_SHIFT; // 转换出来的页数
+
+		if (nPage == 0)
+		{
+			nPage = 1;
+		}
+
+		return nPage;
 	}
 private:
 	
@@ -231,6 +275,7 @@ struct Span
 	void* _freeList = nullptr; // 切好小块内存的自由链表
 };
 
+// 带头双向链表，示意图可以考虑修改 // TODO
 class SpanList
 {
 public:
@@ -239,6 +284,33 @@ public:
 		_head = new Span;
 		_head->_next = _head;
 		_head->_prev = _head;
+	}
+
+	Span* Begin()
+	{
+		return _head->_next;
+	}
+
+	Span* End()
+	{
+		return _head;
+	}
+
+	bool Empty()
+	{
+		return _head->_next == _head;
+	}
+
+	void PushFront(Span* span)
+	{
+		Insert(Begin(), span);
+	}
+
+	Span* PopFront()
+	{
+		Span* front = _head->_next;
+		Erase(front);
+		return front;
 	}
 
 	void Insert(Span* pos, Span* newSpan)
