@@ -1,5 +1,6 @@
 #pragma once
 #include "Common.h"
+#include "ObjectPool.h"
 
 // 单例
 class PageCache
@@ -25,8 +26,11 @@ private:
 	PageCache(const PageCache&) = delete;
 private:
 	SpanList _spanList[NPAGES];
+	ObjectPool<Span> _spanPool;
+	std::unordered_map<PAGE_ID, Span*> _idSpanMap; // 访问时需要加锁，STL容器本身不对线程安全做处理
+	//std::unordered_map<PAGE_ID, size_t> _idSizeMap; // 可选方案之一，单独存映射关系
+
 	static PageCache _sInit;
-	std::unordered_map<PAGE_ID, Span*> _idSpanMap;
 public:
 	// 需要加一把大锁，不能使用桶锁
 	// 因为可能两个线程同时获得了一个span，然后切分

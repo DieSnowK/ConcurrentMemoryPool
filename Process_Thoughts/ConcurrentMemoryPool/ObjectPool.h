@@ -1,28 +1,8 @@
+// 说明
+// 使用定长内存池替代malloc，否则CMP替代malloc，但是里面又调用malloc，死循环了:P
 #pragma once
 #include <iostream>
-
-#ifdef _WIN32
-	#include <Windows.h>
-#elif
-	// Linux下的头文件
-#endif
-
-// 直接去堆上按页申请空间，彻底摆脱malloc(主要)，并非为了提高效率
-//inline static void* SystemAlloc(size_t kpage)
-//{
-//#ifdef _WIN32
-//	void* ptr = VirtualAlloc(0, kpage << 13, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-//#else
-//	// Linux下brk mmap等
-//#endif
-//
-//	if (ptr == nullptr)
-//	{
-//		throw std::bad_alloc();
-//	}
-//
-//	return ptr;
-//}
+#include "Common.h"
 
 // 定长内存池v1.0
 //template<size_t N>

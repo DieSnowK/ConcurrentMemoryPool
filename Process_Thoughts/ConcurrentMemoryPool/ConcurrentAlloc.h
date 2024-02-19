@@ -1,25 +1,57 @@
 #pragma once
 #include "ThreadCache.h"
+#include "PageCache.h"
+#include "ObjectPool.h"
 
 // 为什么需要这个函数？
 // 总不能让每个线程来了之后都自己去创建一个ThreadCache吧:P
 static void* ConcurrentAlloc(size_t size)
 {
-	if (pTLSThreadCache == nullptr)
+	if (size > MAX_BYTES)
 	{
-		pTLSThreadCache = new ThreadCache;
+		size_t alignSize = SizeAlignMap::RoundUp(size);
+		size_t kPage = alignSize >> PAGE_SHIFT;
+
+		PageCache::GetInstance()->_pageMtx.lock();
+		Span* span = PageCache::GetInstance()->NewSpan(kPage);
+		span->_objSize = size;
+		PageCache::GetInstance()->_pageMtx.unlock();
+
+		void* ptr = (void*)(span->_pageId << PAGE_SHIFT);
+		return ptr;
 	}
+	else
+	{
+		if (pTLSThreadCache == nullptr)
+		{
+			//pTLSThreadCache = new ThreadCache;
+			static ObjectPool<ThreadCache> tcPool;
+			pTLSThreadCache = tcPool.New();
+		}
 
 #ifdef DEBUG
-	cout << std::this_thread::get_id() << " " << pTLSThreadCache << endl;
+		cout << std::this_thread::get_id() << " " << pTLSThreadCache << endl;
 #endif
 
-	return pTLSThreadCache->Allocate(size);
+		return pTLSThreadCache->Allocate(size);
+	}
 }
 
-static void ConcurrentFree(void* ptr, size_t size)
+static void ConcurrentFree(void* ptr)
 {
-	assert(pTLSThreadCache && ptr);
+	Span* span = PageCache::GetInstance()->MapObjToSpan(ptr); // 这里只能在if外面，不然会造成死锁
+	size_t size = span->_objSize;
 
-	pTLSThreadCache->Deallocate(ptr, size);
+	if (size > MAX_BYTES)
+	{
+
+		PageCache::GetInstance()->_pageMtx.lock();
+		PageCache::GetInstance()->ReleaseSpanToPageCache(span);
+		PageCache::GetInstance()->_pageMtx.unlock();
+	}
+	else
+	{
+		assert(pTLSThreadCache && ptr);
+		pTLSThreadCache->Deallocate(ptr, size);
+	}
 }

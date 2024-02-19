@@ -4,12 +4,34 @@ PageCache PageCache::_sInit;
 
 Span* PageCache::NewSpan(size_t k)
 {
-	assert(k > 0 && k < NPAGES);
+	assert(k > 0);
+
+	// 大于128Page直接向堆申请
+	if (k > NPAGES - 1)
+	{
+		void* ptr = SystemAlloc(k);
+		//Span* span = new Span;
+		Span* span = _spanPool.New();
+		span->_pageId = (PAGE_ID)ptr >> PAGE_SHIFT;
+		span->_n = k;
+
+		_idSpanMap[span->_pageId] = span;
+
+		return span;
+	}
 
 	// 先检查第k个桶有没有span
 	if (!_spanList[k].Empty())
 	{
-		return _spanList[k].PopFront();
+		Span* kSpan = _spanList[k].PopFront();
+
+		// 此处也要映射id和span，查出bug了√
+		for (PAGE_ID i = 0; i < kSpan->_n; i++)
+		{
+			_idSpanMap[kSpan->_pageId + i] = kSpan;
+		}
+
+		return kSpan;
 	}
 	
 	// 检查后面的桶有没有span，如果有，则可以切分
@@ -20,7 +42,8 @@ Span* PageCache::NewSpan(size_t k)
 			// 切分成一个k页的span和一个n-k页的span
 			// k页的span返回给Central Cache，n-k页的span挂到n-k号桶上去
 			Span* nSpan = _spanList[i].PopFront();
-			Span* kSpan = new Span;
+			//Span* kSpan = new Span;
+			Span* kSpan = _spanPool.New();
 			
 			// 在nSpan的头部切一个k页下来
 			kSpan->_pageId = nSpan->_pageId;
@@ -45,7 +68,8 @@ Span* PageCache::NewSpan(size_t k)
 	}
 
 	// 走到这里Page Cache从没有符合要求的Span，则需要向堆要内存，且直接要一个最大的Page
-	Span* bigSpan = new Span;
+	//Span* bigSpan = new Span;
+	Span* bigSpan = _spanPool.New();
 	void* ptr = SystemAlloc(NPAGES - 1);
 	bigSpan->_pageId = (PAGE_ID)ptr >> PAGE_SHIFT;
 	bigSpan->_n = NPAGES - 1;
@@ -58,6 +82,8 @@ Span* PageCache::NewSpan(size_t k)
 Span* PageCache::MapObjToSpan(void* obj)
 {
 	assert(obj);
+	
+	std::unique_lock<std::mutex> lock(_pageMtx); // RAII锁，出了作用域自动解锁
 
 	PAGE_ID id = (PAGE_ID)obj >> PAGE_SHIFT;
 	auto ret = _idSpanMap.find(id);
@@ -75,6 +101,17 @@ Span* PageCache::MapObjToSpan(void* obj)
 
 void PageCache::ReleaseSpanToPageCache(Span* span)
 {
+	// 大于128Page的直接还给堆
+	if (span->_n > NPAGES - 1)
+	{
+		void* ptr = (void*)(span->_pageId << PAGE_SHIFT);
+		SystemFree(ptr);
+		//delete span;
+		_spanPool.Delete(span);
+
+		return;
+	}
+
 	// 对span前后的页，尝试进行合并，缓解内存碎片问题
 	// 这里添加字段_isUse判断，不可用_useCount判断，会有线程安全问题
 	while (1) // 向前
@@ -105,7 +142,8 @@ void PageCache::ReleaseSpanToPageCache(Span* span)
 		span->_pageId = prevSpan->_pageId;
 		span->_n += prevSpan->_n;
 
-		delete prevSpan;
+		//delete prevSpan;
+		_spanPool.Delete(prevSpan);
 	}
 
 	while (1) // 向前
@@ -136,7 +174,8 @@ void PageCache::ReleaseSpanToPageCache(Span* span)
 		span->_n += nextSpan->_n;
 
 		_spanList[nextSpan->_n].Erase(nextSpan);
-		delete nextSpan;
+		//delete nextSpan;
+		_spanPool.Delete(nextSpan);
 	}
 
 	_spanList[span->_n].PushFront(span);

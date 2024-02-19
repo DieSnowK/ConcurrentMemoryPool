@@ -14,7 +14,7 @@ using std::endl;
 	// Linux
 #endif
 
-#define DEBUG
+//#define DEBUG
 
 // 这里可以整理 // TODO
 #ifdef _WIN64
@@ -31,7 +31,7 @@ static const size_t NPAGES = 129; // 最大Page的个数，128，但是0下标占位一个
 static const size_t PAGE_SHIFT = 13; // 字节数与页的转换
 
 // 直接去堆上按页申请空间
-inline static void* SystemAlloc(size_t kpage)
+static inline void* SystemAlloc(size_t kpage)
 {
 #ifdef _WIN32
 	void* ptr = VirtualAlloc(0, kpage << 13, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
@@ -45,6 +45,15 @@ inline static void* SystemAlloc(size_t kpage)
 	}
 
 	return ptr;
+}
+
+static inline void SystemFree(void* ptr)
+{
+#ifdef _WIN32
+	VirtualFree(ptr, 0, MEM_RELEASE);
+#else
+	// Linux下sbrk unmmap等
+#endif
 }
 
 // static使NextObj()只在当前.cpp文件中可见，因为多个文件都会包含Common.h
@@ -119,6 +128,7 @@ public:
 		return _maxsize;
 	}
 private:
+	
 	void* _freeList = nullptr;
 	size_t _maxsize = 1;
 	size_t _size = 0;
@@ -161,8 +171,6 @@ public:
 	// 计算向上对齐是多少
 	static inline size_t RoundUp(size_t size) 
 	{
-		assert(size <= MAX_BYTES);
-
 		if (size <= 128)
 		{
 			return _RoundUp(size, 8);
@@ -185,9 +193,7 @@ public:
 		}
 		else
 		{
-			// 按理来说不会走到这里
-			assert(false);
-			return -1;
+			return _RoundUp(size, 1 << PAGE_SHIFT);
 		}
 	}
 
@@ -296,6 +302,7 @@ struct Span
 	Span* _next = nullptr; // 双向链表的结构
 	Span* _prev = nullptr;
 
+	size_t _objSize = 0; // 切好小对象的大小
 	size_t _useCount = 0; // 切好小块内存，被分配给Thread Cache的计数
 	bool _isUse = false; // 是否在被使用
 	void* _freeList = nullptr; // 切好小块内存的自由链表

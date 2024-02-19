@@ -144,13 +144,13 @@ void TestConcurrentAlloc3()
 	cout << p4 << endl;
 	cout << p5 << endl;
 
-	ConcurrentFree(p1, 6);
-	ConcurrentFree(p2, 8);
-	ConcurrentFree(p3, 1);
-	ConcurrentFree(p4, 7);
-	ConcurrentFree(p5, 8);
-	ConcurrentFree(p6, 8);
-	ConcurrentFree(p7, 8);
+	ConcurrentFree(p1);
+	ConcurrentFree(p2);
+	ConcurrentFree(p3);
+	ConcurrentFree(p4);
+	ConcurrentFree(p5);
+	ConcurrentFree(p6);
+	ConcurrentFree(p7);
 }
 
 void MultiThreadAlloc1()
@@ -164,7 +164,7 @@ void MultiThreadAlloc1()
 
 	for (auto e : v)
 	{
-		ConcurrentFree(e, 6);
+		ConcurrentFree(e);
 	}
 }
 
@@ -179,7 +179,7 @@ void MultiThreadAlloc2()
 
 	for (auto e : v)
 	{
-		ConcurrentFree(e, 16);
+		ConcurrentFree(e);
 	}
 }
 
@@ -192,16 +192,25 @@ void TestMultiThread()
 	t2.join();
 }
 
-int main()
+void BigAlloc()
 {
-	//TestObjectPool();
-	//TLSTest();
-	//TestConcurrentAlloc1();
-	//TestConcurrentAlloc2();
-	//TestAddressShift();
-	//TestConcurrentAlloc3();
+	void* p1 = ConcurrentAlloc(257 * 1024);
+	ConcurrentFree(p1);
 
-	TestMultiThread();
-
-	return 0;
+	void* p2 = ConcurrentAlloc(129 * 8 * 1024);
+	ConcurrentFree(p2);
 }
+
+//int main()
+//{
+//	//TestObjectPool();
+//	//TLSTest();
+//	//TestConcurrentAlloc1();
+//	//TestConcurrentAlloc2();
+//	//TestAddressShift();
+//	//TestConcurrentAlloc3();
+//	//BigAlloc();
+//	//TestMultiThread();
+//
+//	return 0;
+//}
