@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <thread>
 #include <mutex>
+#include <unordered_map>
 #include <cassert>
 using std::cout;
 using std::endl;
@@ -63,14 +64,16 @@ public:
 		// 头插
 		NextObj(obj) = _freeList; //*(void**)obj = _freeList;
 		_freeList = obj;
+		_size++;
 	}
-	void PushRange(void* start, void* end)
+	void PushRange(void* start, void* end, size_t num)
 	{
 		assert(start);
 		assert(end);
 
 		NextObj(end) = _freeList;
 		_freeList = start;
+		_size += num;
 	}
 
 	void* Pop()
@@ -80,13 +83,35 @@ public:
 		// 头删
 		void* obj = _freeList;
 		_freeList = NextObj(obj);
+		_size--;
 
 		return obj;
+	}
+
+	void PopRange(void*& start, void*& end, size_t n)
+	{
+		assert(n >= _size);
+
+		start = _freeList;
+		end = start;
+
+		for (size_t i = 0; i < n - 1; i++)
+		{
+			end = NextObj(end);
+		}
+		_freeList = NextObj(end);
+		NextObj(end) = nullptr;
+		_size -= n;
 	}
 
 	bool Empty()
 	{
 		return _freeList == nullptr;
+	}
+
+	size_t Size()
+	{
+		return _size;
 	}
 
 	size_t& MaxSize()
@@ -96,7 +121,7 @@ public:
 private:
 	void* _freeList = nullptr;
 	size_t _maxsize = 1;
-
+	size_t _size = 0;
 };
 
 // 思考为什么不都按8Bytes对齐？
@@ -272,6 +297,7 @@ struct Span
 	Span* _prev = nullptr;
 
 	size_t _useCount = 0; // 切好小块内存，被分配给Thread Cache的计数
+	bool _isUse = false; // 是否在被使用
 	void* _freeList = nullptr; // 切好小块内存的自由链表
 };
 

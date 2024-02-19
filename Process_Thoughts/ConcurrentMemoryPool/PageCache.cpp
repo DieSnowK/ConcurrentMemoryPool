@@ -29,6 +29,16 @@ Span* PageCache::NewSpan(size_t k)
 			nSpan->_n -= k;
 
 			_spanList[nSpan->_n].PushFront(nSpan);
+			// 存储nSpan的首尾页号跟nSpan的映射，方便Page Cache回收内存时进行的合并查找
+			// TIPS：存两个时为了方便向前&向后:P
+			_idSpanMap[nSpan->_pageId] = nSpan;
+			_idSpanMap[nSpan->_pageId + nSpan->_n - 1] = nSpan;
+
+			// 建立id和span的映射，方便Central Cache回收小块内存时，查找对应的span
+			for (PAGE_ID i = 0; i < kSpan->_n; i++)
+			{
+				_idSpanMap[kSpan->_pageId + i] = kSpan;
+			}
 
 			return kSpan;
 		}
@@ -43,4 +53,94 @@ Span* PageCache::NewSpan(size_t k)
 	// 这里操作神之一笔，复用前面的代码
 	_spanList[bigSpan->_n].PushFront(bigSpan);
 	return NewSpan(k);
+}
+
+Span* PageCache::MapObjToSpan(void* obj)
+{
+	assert(obj);
+
+	PAGE_ID id = (PAGE_ID)obj >> PAGE_SHIFT;
+	auto ret = _idSpanMap.find(id);
+	if (ret != _idSpanMap.end())
+	{
+		return ret->second;
+	}
+	else
+	{
+		// 理应不会走到这，因为obj和PAGE_ID应该是映射上的
+		assert(false);
+		return nullptr;
+	}
+}
+
+void PageCache::ReleaseSpanToPageCache(Span* span)
+{
+	// 对span前后的页，尝试进行合并，缓解内存碎片问题
+	// 这里添加字段_isUse判断，不可用_useCount判断，会有线程安全问题
+	while (1) // 向前
+	{
+		PAGE_ID prevId = span->_pageId - 1;
+		auto ret = _idSpanMap.find(prevId);
+
+		// 前面的页号没有，不进行合并
+		if (ret == _idSpanMap.end())
+		{
+			break;
+		}
+
+		Span* prevSpan = ret->second;
+
+		// 前面相邻页的span在使用，不进行合并
+		if (prevSpan->_isUse == true)
+		{
+			break;
+		}
+
+		// 合并出超过128页的span没办法管理
+		if (prevSpan->_n + span->_n > NPAGES - 1)
+		{
+			break;
+		}
+
+		span->_pageId = prevSpan->_pageId;
+		span->_n += prevSpan->_n;
+
+		delete prevSpan;
+	}
+
+	while (1) // 向前
+	{
+		PAGE_ID nextId = span->_pageId + span->_n;
+		auto ret = _idSpanMap.find(nextId);
+
+		// 前面的页号没有，不进行合并
+		if (ret == _idSpanMap.end())
+		{
+			break;
+		}
+
+		Span* nextSpan = ret->second;
+
+		// 前面相邻页的span在使用，不进行合并
+		if (nextSpan->_isUse == true)
+		{
+			break;
+		}
+
+		// 合并出超过128页的span没办法管理
+		if (nextSpan->_n + span->_n > NPAGES - 1)
+		{
+			break;
+		}
+
+		span->_n += nextSpan->_n;
+
+		_spanList[nextSpan->_n].Erase(nextSpan);
+		delete nextSpan;
+	}
+
+	_spanList[span->_n].PushFront(span);
+	span->_isUse = false;
+	_idSpanMap[span->_pageId] = span;
+	_idSpanMap[span->_pageId + span->_n - 1] = span;
 }

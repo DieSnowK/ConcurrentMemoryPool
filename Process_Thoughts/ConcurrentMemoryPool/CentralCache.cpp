@@ -54,6 +54,7 @@ Span* CentralCache::GetOneSpan(SpanList& list, size_t alignSize)
 	// NewSpan中递归锁的一种解决方案|
 	PageCache::GetInstance()->_pageMtx.lock();
 	Span* span = PageCache::GetInstance()->NewSpan(SizeAlignMap::MovePageNum(alignSize));
+	span->_isUse = true;
 	PageCache::GetInstance()->_pageMtx.unlock();
 	// 不需要立即续上Central Cache的桶锁,因为k页span只有当前线程能拿到，其他线程拿不到
 
@@ -84,3 +85,43 @@ Span* CentralCache::GetOneSpan(SpanList& list, size_t alignSize)
 
 	return span;
 }
+
+void CentralCache::ReleaseListToSpans(void* start, size_t alignSize)
+{
+	size_t index = SizeAlignMap::Index(alignSize);
+
+	_spanLists[index]._mtx.lock();
+
+	while (start)
+	{
+		void* next = NextObj(start);
+		Span* span = PageCache::GetInstance()->MapObjToSpan(start);
+		NextObj(start) = span->_freeList;
+		span->_freeList = start;
+		start = next;
+
+		span->_useCount--;
+		// span切分出去的小块内存都回来了
+		// 这个span可以回收给PageCache了，PageCache可以尝试去做前后页的合并
+		if (span->_useCount == 0) 
+		{
+			_spanLists[index].Erase(span);
+			span->_freeList = nullptr;
+			span->_next = nullptr;
+			span->_prev = nullptr;
+
+			// 这里已经去操作PageCache了，可以先解桶锁，以便线程归还内存/申请内存
+			_spanLists[index]._mtx.unlock();
+
+			// 操作PageCache，外面加锁比里面相对好控制一些
+			PageCache::GetInstance()->_pageMtx.lock();
+			PageCache::GetInstance()->ReleaseSpanToPageCache(span);
+			PageCache::GetInstance()->_pageMtx.unlock();
+
+			_spanLists[index]._mtx.lock();
+		}
+	}
+
+	_spanLists[index]._mtx.unlock();
+}
+
