@@ -40,8 +40,8 @@ public:
 
 			// 可能T对象大小小于一个指针，此时若只使用一个T的大小，则存不下一个地址
 			size_t objSize = sizeof(T) < sizeof(void*) ? sizeof(void*) : sizeof(T); 
-			_memory += sizeof(T);
-			_remainBytes -= sizeof(T);
+			_memory += objSize;
+			_remainBytes -= objSize;
 		}
 
 		// 定位new，显式调用T的构造函数初始化

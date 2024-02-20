@@ -1,6 +1,15 @@
 #pragma once
 #include "Common.h"
 #include "ObjectPool.h"
+#include "PageMap.h"
+
+#ifdef _WIN64
+	typedef TCMalloc_PageMap3<64 - PAGE_SHIFT> PageMAP; // TCMalloc_PageMap3还未改造
+#elif _WIN32
+	typedef TCMalloc_PageMap2<32 - PAGE_SHIFT> PageMAP;
+#else
+	// Linux下判断位数
+#endif
 
 // 单例
 class PageCache
@@ -27,7 +36,8 @@ private:
 private:
 	SpanList _spanList[NPAGES];
 	ObjectPool<Span> _spanPool;
-	std::unordered_map<PAGE_ID, Span*> _idSpanMap; // 访问时需要加锁，STL容器本身不对线程安全做处理
+	PageMAP _idSpanMap;
+	//std::unordered_map<PAGE_ID, Span*> _idSpanMap; // 访问时需要加锁，STL容器本身不对线程安全做处理
 	//std::unordered_map<PAGE_ID, size_t> _idSizeMap; // 可选方案之一，单独存映射关系
 
 	static PageCache _sInit;

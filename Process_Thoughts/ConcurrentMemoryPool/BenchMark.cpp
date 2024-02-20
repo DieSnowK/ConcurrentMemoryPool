@@ -116,7 +116,7 @@ int main()
 {
 	size_t n = 1000;
 	cout << "==========================================================" << endl;
-	BenchmarkConcurrentMalloc(n, 2, 10);
+	BenchmarkConcurrentMalloc(n, 4, 10);
 	cout << endl << endl;
 
 	BenchmarkMalloc(n, 4, 10);
