@@ -16,7 +16,6 @@ using std::endl;
 
 //#define DEBUG
 
-// 这里可以整理 // TODO
 #ifdef _WIN64
 	typedef unsigned long long PAGE_ID;
 #elif _WIN32
@@ -289,8 +288,6 @@ public:
 
 		return nPage;
 	}
-private:
-	
 };
 
 // 管理多个连续页大块内存跨度结构
@@ -308,7 +305,7 @@ struct Span
 	void* _freeList = nullptr; // 切好小块内存的自由链表
 };
 
-// 带头双向链表，示意图可以考虑修改 // TODO
+// 带头双向链表
 class SpanList
 {
 public:

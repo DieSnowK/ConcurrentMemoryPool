@@ -1,8 +1,6 @@
 #include "ThreadCache.h"
 #include "CentralCache.h"
 
-// 调用构造和析构？// TODO
-
 void* ThreadCache::Allocate(size_t size)
 {
 	assert(size <= MAX_BYTES);
