@@ -1,5 +1,5 @@
-#include "ThreadCache.h"
-#include "CentralCache.h"
+#include "../include/ThreadCache.h"
+#include "../include/CentralCache.h"
 
 void* ThreadCache::Allocate(size_t size)
 {
@@ -42,7 +42,7 @@ void* ThreadCache::FetchFromCentralCache(size_t index, size_t alignSize)
 	// 2.如果不断有alignSize大小内存的需求，那么batchNum就会不断增长，直到上限
 	// 3.alignSize越大，一次性向Central Cache要的batchNum就越小
 	// 4.alignSize越小，一次性向Central Cache要的batchNum就越大	
-	size_t batchNum = min(_freeLists[index].MaxSize(), SizeAlignMap::MoveObjNum(alignSize));
+	size_t batchNum = std::min(_freeLists[index].MaxSize(), SizeAlignMap::MoveObjNum(alignSize));
 	if (batchNum == _freeLists[index].MaxSize())
 	{
 		_freeLists[index].MaxSize() += 2;

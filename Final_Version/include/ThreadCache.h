@@ -21,4 +21,11 @@ private:
 
 // 实现无锁访问 -- TLS
 // 通过TLS，每个线程无锁地获取自己专属的ThreadCache对象
-static _declspec(thread) ThreadCache* pTLSThreadCache = nullptr;
+#ifdef _WIN32
+	static _declspec(thread) ThreadCache *pTLSThreadCache = nullptr;
+#else // Linux
+	static __thread ThreadCache *pTLSThreadCache = nullptr;
+#endif
+
+// C++11 支持
+// static thread_local ThreadCache *pTLSThreadCache = nullptr;

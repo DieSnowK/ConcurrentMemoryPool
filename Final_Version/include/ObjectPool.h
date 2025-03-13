@@ -1,5 +1,3 @@
-// 说明
-// 使用定长内存池替代malloc，否则CMP替代malloc，但是里面又调用malloc，死循环了:P
 #pragma once
 #include <iostream>
 #include "Common.h"
@@ -11,6 +9,7 @@ public:
 	T* New()
 	{
 		T* obj = nullptr;
+
 		// 优先用已经还回来的内存块
 		if (_freeList)
 		{
@@ -55,8 +54,9 @@ public:
 		_freeList = obj;
 
 	}
+
 private:
-	char* _memory = nullptr; // 指向大块内存的指针
-	void* _freeList = nullptr; // 还回来的内存的自由链表的头指针
-	size_t _remainBytes = 0; // 大块内存在切分过程中剩余字节数，用于防止越界
+	char* _memory = nullptr; 	// 指向大块内存的指针
+	void* _freeList = nullptr;  // 还回来的内存的自由链表的头指针
+	size_t _remainBytes = 0; 	// 大块内存在切分过程中剩余字节数，用于防止越界
 };

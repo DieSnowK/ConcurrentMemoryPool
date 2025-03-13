@@ -1,5 +1,5 @@
-#include "CentralCache.h"
-#include "PageCache.h"
+#include "../include/CentralCache.h"
+#include "../include/PageCache.h"
 
 CentralCache CentralCache::_sInit;
 

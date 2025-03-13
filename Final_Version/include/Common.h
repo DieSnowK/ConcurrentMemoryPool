@@ -5,13 +5,16 @@
 #include <mutex>
 #include <unordered_map>
 #include <cassert>
+#include <cstring>
+
 using std::cout;
 using std::endl;
 
 #ifdef _WIN32
 	#include <Windows.h>
 #else
-	// Linux
+	#include <unistd.h>
+	#include <sys/mman.h>
 #endif
 
 //#define DEBUG
@@ -20,8 +23,8 @@ using std::endl;
 	typedef unsigned long long PAGE_ID;
 #elif _WIN32
 	typedef size_t PAGE_ID;
-#else
-	// Linux
+#else // Linux
+	typedef size_t PAGE_ID;
 #endif
 
 static const size_t MAX_BYTES = 256 * 1024;
@@ -34,8 +37,12 @@ static inline void* SystemAlloc(size_t kpage)
 {
 #ifdef _WIN32
 	void* ptr = VirtualAlloc(0, kpage << 13, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-#else
-	// Linux下brk mmap等
+#else // Linux
+	void *ptr = mmap(NULL, kpage << PAGE_SHIFT, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	if (ptr == MAP_FAILED)
+	{
+		ptr = nullptr;
+	}
 #endif
 
 	if (ptr == nullptr)
@@ -50,8 +57,8 @@ static inline void SystemFree(void* ptr)
 {
 #ifdef _WIN32
 	VirtualFree(ptr, 0, MEM_RELEASE);
-#else
-	// Linux下sbrk unmmap等
+#else // Linux
+	munmap(ptr, 0);
 #endif
 }
 

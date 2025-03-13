@@ -1,10 +1,10 @@
 #pragma once
 #include "Common.h"
 
-
 // Single-level array
-template <int BITS> // BITS = 32/64 - PAGE_SHIFT，即存储页号最多需要多少位
-class TCMalloc_PageMap1 {
+template <int BITS> // BITS = 32/64 - PAGE_SHIFT锛屽嵆瀛樺偍椤靛彿鏈�澶氶渶瑕佸灏戜綅
+class TCMalloc_PageMap1
+{
 private:
 	static const int LENGTH = 1 << BITS;
 	void** array_;
@@ -163,7 +163,7 @@ public:
 	}
 
 	void set(Number k, void* v) {
-		ASSERT(k >> BITS == 0);
+		assert(k >> BITS == 0);
 		const Number i1 = k >> (LEAF_BITS + INTERIOR_BITS);
 		const Number i2 = (k >> LEAF_BITS) & (INTERIOR_LENGTH - 1);
 		const Number i3 = k & (LEAF_LENGTH - 1);
