@@ -28,9 +28,9 @@ using std::endl;
 #endif
 
 static const size_t MAX_BYTES = 256 * 1024;
-static const size_t NFREELIST = 208; // 哈希桶的个数
-static const size_t NPAGES = 129; // 最大Page的个数，128，但是0下标占位一个
-static const size_t PAGE_SHIFT = 13; // 字节数与页的转换
+static const size_t NFREELIST = 208; 	// 哈希桶的个数
+static const size_t NPAGES = 129; 		// 最大Page的个数，128，但是0下标占位一个
+static const size_t PAGE_SHIFT = 13; 	// 字节数与页的转换
 
 // 直接去堆上按页申请空间
 static inline void* SystemAlloc(size_t kpage)
@@ -62,25 +62,26 @@ static inline void SystemFree(void* ptr)
 #endif
 }
 
-// static使NextObj()只在当前.cpp文件中可见，因为多个文件都会包含Common.h
+// static使 NextObj() 只在当前.cpp文件中可见，因为多个文件都会包含Common.h
 static inline void*& NextObj(void* obj)
 {
 	return *(void**)obj;
 }
 
-// 管理切分好的小对象的自由链表
+// 管理 切分好的小对象 的自由链表
 class FreeList
 {
 public:
-	void Push(void* obj)
+	// 头插
+	void Push(void *obj)
 	{
 		assert(obj);
 
-		// 头插
-		NextObj(obj) = _freeList; //*(void**)obj = _freeList;
+		NextObj(obj) = _freeList; // *(void**)obj = _freeList;
 		_freeList = obj;
 		_size++;
 	}
+
 	void PushRange(void* start, void* end, size_t num)
 	{
 		assert(start);
@@ -91,11 +92,11 @@ public:
 		_size += num;
 	}
 
-	void* Pop()
+	// 头删
+	void *Pop()
 	{
 		assert(_freeList);
 
-		// 头删
 		void* obj = _freeList;
 		_freeList = NextObj(obj);
 		_size--;
@@ -114,6 +115,7 @@ public:
 		{
 			end = NextObj(end);
 		}
+
 		_freeList = NextObj(end);
 		NextObj(end) = nullptr;
 		_size -= n;
@@ -133,20 +135,20 @@ public:
 	{
 		return _maxsize;
 	}
+
 private:
-	
 	void* _freeList = nullptr;
 	size_t _maxsize = 1;
 	size_t _size = 0;
 };
 
-// 思考为什么不都按8Bytes对齐？
+// 思考: 为什么不都按8Bytes对齐？
 // 需要32768个8Bytes对齐的自由链表，浪费内存
 
 // 整体控制在最多10%左右的内碎片浪费
-// [1,128]					8byte对齐	    freelist[0,16)
-// [128+1,1024]				16byte对齐	    freelist[16,72)
-// [1024+1,8*1024]			128byte对齐	    freelist[72,128)
+// [1,128]					8byte对齐	     reelist[0,16)
+// [128+1,1024]				16byte对齐	     freelist[16,72)
+// [1024+1,8*1024]			128byte对齐	     freelist[72,128)
 // [8*1024+1,64*1024]		1024byte对齐     freelist[128,184)
 // [64*1024+1,256*1024]		8*1024byte对齐   freelist[184,208)
 
@@ -159,7 +161,6 @@ public:
 	{
 		return (size + alignNum - 1) & ~(alignNum - 1);
 	}
-
 
 	// 计算向上对齐是多少
 	static inline size_t RoundUp(size_t size) 
@@ -260,7 +261,7 @@ public:
 
 		size_t num = MoveObjNum(alignSize);
 		size_t nPage = num * alignSize; // 总字节数
-		nPage >>= PAGE_SHIFT; // 转换出来的页数
+		nPage >>= PAGE_SHIFT; 			// 转换出来的页数
 
 		if (nPage == 0)
 		{
@@ -271,19 +272,19 @@ public:
 	}
 };
 
-// 管理多个连续页大块内存跨度结构
+// 管理 多个连续页大块内存跨度 结构
 struct Span
 {
-	PAGE_ID _pageId = 0; // 大块内存起始页的页号
-	size_t _n = 0; // 页的数量
+	PAGE_ID _pageId = 0; 		// 大块内存起始页的页号
+	size_t _n = 0; 		 		// 页的数量
 
-	Span* _next = nullptr; // 双向链表的结构
+	Span* _next = nullptr;  	// 双向链表的结构
 	Span* _prev = nullptr;
 
-	size_t _objSize = 0; // 切好小对象的大小
-	size_t _useCount = 0; // 切好小块内存，被分配给Thread Cache的计数
-	bool _isUse = false; // 是否在被使用
-	void* _freeList = nullptr; // 切好小块内存的自由链表
+	size_t _objSize = 0; 		// 切好小对象的大小
+	size_t _useCount = 0; 		// 切好小块内存，被分配给Thread Cache的计数
+	bool _isUse = false; 		// 是否在被使用
+	void* _freeList = nullptr;  // 切好小块内存的自由链表
 };
 
 // 带头双向链表
@@ -348,8 +349,10 @@ public:
 		prev->_next = next;
 		next->_prev = prev;
 	}
+	
 private:
-	Span* _head; // 带头双向链表的头节点
+	Span* _head; 	 // 带头双向链表的头节点
+
 public:
 	std::mutex _mtx; // 桶锁
 };

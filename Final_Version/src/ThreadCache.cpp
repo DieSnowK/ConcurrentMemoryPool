@@ -4,6 +4,7 @@
 void* ThreadCache::Allocate(size_t size)
 {
 	assert(size <= MAX_BYTES);
+	
 	size_t alignSize = SizeAlignMap::RoundUp(size);
 	size_t index = SizeAlignMap::Index(size);
 

@@ -43,7 +43,6 @@ static void ConcurrentFree(void* ptr)
 
 	if (size > MAX_BYTES)
 	{
-
 		PageCache::GetInstance()->_pageMtx.lock();
 		PageCache::GetInstance()->ReleaseSpanToPageCache(span);
 		PageCache::GetInstance()->_pageMtx.unlock();
