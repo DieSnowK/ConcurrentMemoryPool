@@ -53,11 +53,11 @@ Span* CentralCache::GetOneSpan(SpanList& list, size_t alignSize)
 	// 至此，说明没有空闲的span了，需要从PageCache获取
 	// NewSpan中递归锁的一种解决方案|
 	PageCache::GetInstance()->_pageMtx.lock();
-	Span* span = PageCache::GetInstance()->NewSpan(SizeAlignMap::MovePageNum(alignSize)); // 这里出问题了
+	Span* span = PageCache::GetInstance()->NewSpan(SizeAlignMap::MovePageNum(alignSize));
 	span->_isUse = true;
 	span->_objSize = alignSize;
 	PageCache::GetInstance()->_pageMtx.unlock();
-	// 不需要立即续上Central Cache的桶锁,因为k页span只有当前线程能拿到，其他线程拿不到
+	// 不需要立即续上Central Cache的桶锁, 因为k页span只有当前线程能拿到，其他线程拿不到
 
 	// 获取span之后，需要切分span，不需要加锁
 	// 计算span的大块内存起始地址和大块内存的大小(字节数)
@@ -79,7 +79,7 @@ Span* CentralCache::GetOneSpan(SpanList& list, size_t alignSize)
 		start += alignSize;
 	}
 
-	NextObj(tail) = nullptr; // 将tail指向nullptr，查出bug了√
+	NextObj(tail) = nullptr; // 将tail指向nullptr
 
 	// 切好span以后，需要把span挂到桶里面去的时候，再加锁
 	list._mtx.lock();

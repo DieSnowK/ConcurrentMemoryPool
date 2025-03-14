@@ -24,7 +24,7 @@ Span* PageCache::NewSpan(size_t k)
 	{
 		Span* kSpan = _spanList[k].PopFront();
 
-		// 此处也要映射id和span，查出bug了√
+		// 此处也要映射id和span
 		for (PAGE_ID i = 0; i < kSpan->_n; i++)
 		{
 			_idSpanMap.set(kSpan->_pageId + i, kSpan);
@@ -51,7 +51,7 @@ Span* PageCache::NewSpan(size_t k)
 
 			_spanList[nSpan->_n].PushFront(nSpan);
 			// 存储nSpan的首尾页号跟nSpan的映射，方便Page Cache回收内存时进行的合并查找
-			// TIPS：存两个时为了方便向前&向后:P
+			// TIPS：存两个是为了方便向前&向后:P
 			_idSpanMap.set(nSpan->_pageId, nSpan);
 			_idSpanMap.set(nSpan->_pageId + nSpan->_n - 1, nSpan);
 
@@ -66,7 +66,7 @@ Span* PageCache::NewSpan(size_t k)
 		}
 	}
 
-	// 走到这里Page Cache从没有符合要求的Span，则需要向堆要内存，且直接要一个最大的Page
+	// 走到这里Page Cache没有符合要求的Span，则需要向堆要内存，且直接要一个最大的Page
 	Span* bigSpan = _spanPool.New();
 	void* ptr = SystemAlloc(NPAGES - 1);
 	bigSpan->_pageId = (PAGE_ID)ptr >> PAGE_SHIFT;
@@ -146,7 +146,7 @@ void PageCache::ReleaseSpanToPageCache(Span* span)
 		PAGE_ID nextId = span->_pageId + span->_n;
 		Span* ret = (Span*)_idSpanMap.get(nextId);
 
-		// 前面的页号没有，不进行合并
+		// 后面的页号没有，不进行合并
 		if (ret == nullptr)
 		{
 			break;
@@ -154,7 +154,7 @@ void PageCache::ReleaseSpanToPageCache(Span* span)
 
 		Span* nextSpan = ret;
 
-		// 前面相邻页的span在使用，不进行合并
+		// 后面相邻页的span在使用，不进行合并
 		if (nextSpan->_isUse == true)
 		{
 			break;

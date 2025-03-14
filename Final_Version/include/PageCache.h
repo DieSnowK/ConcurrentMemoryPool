@@ -36,9 +36,7 @@ public:
 
 private:
 	PageCache()
-	{
-		
-	}
+	{}
 
 	PageCache(const PageCache &) = delete;
 
