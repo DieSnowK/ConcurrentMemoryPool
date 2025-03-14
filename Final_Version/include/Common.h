@@ -200,7 +200,7 @@ public:
 	static inline size_t Index(size_t size)
 	{
 		assert(size <= MAX_BYTES);
-		static const size_t FrontNum[4] = {16, 56, 56, 56};
+		static const size_t FrontNum[4] = {16, 56, 56, 56}; // 每个区间有多少个链
 
 		if (size <= 128)
 		{
@@ -208,19 +208,19 @@ public:
 		}
 		else if (size <= 1024)
 		{
-			return _Index(size, 4) + FrontNum[0];
+			return _Index(size - 128, 4) + FrontNum[0];
 		}
 		else if (size <= 8 * 1024)
 		{
-			return _Index(size, 7) + FrontNum[0] + FrontNum[1];
+			return _Index(size - 1024, 7) + FrontNum[0] + FrontNum[1];
 		}
 		else if (size <= 64 * 1024)
 		{
-			return _Index(size, 10) + FrontNum[0] + FrontNum[1] + FrontNum[2];
+			return _Index(size - 8 * 1024, 10) + FrontNum[0] + FrontNum[1] + FrontNum[2];
 		}
 		else if (size <= 256 * 1024)
 		{
-			return _Index(size, 13) + FrontNum[0] + FrontNum[1] + FrontNum[2] + FrontNum[3];
+			return _Index(size - 64 * 1024, 13) + FrontNum[0] + FrontNum[1] + FrontNum[2] + FrontNum[3];
 		}
 		else
 		{
@@ -349,7 +349,7 @@ public:
 		prev->_next = next;
 		next->_prev = prev;
 	}
-	
+
 private:
 	Span* _head; 	 // 带头双向链表的头节点
 
